@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 # quilt: idempotent installer. Keybindings for space-switching are the native macOS "Switch to
-# Desktop 1..9" shortcuts (unchanged by this PoC); quilt does not use skhd. Moving the focused
-# window to a space has no keyboard shortcut — run `quilt window --space N` by hand.
+# Desktop 1..9" shortcuts (unchanged by this PoC). Moving the focused window to a space has no
+# keyboard shortcut — run `quilt window --space N` by hand.
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HS="/opt/homebrew/bin/hs"
 
 case "${1:-}" in
-  "") STOP_YABAI=0 ;;
-  --stop-yabai) STOP_YABAI=1 ;;
-  *) echo "usage: install.sh [--stop-yabai]" >&2; exit 64 ;;
+  "") ;;
+  *) echo "usage: install.sh" >&2; exit 64 ;;
 esac
 
 echo "==> 1/8 prerequisites"
@@ -95,14 +94,5 @@ for _ in $(seq 1 15); do
 done
 pgrep -x Hammerspoon >/dev/null || { echo "install.sh: Hammerspoon is not running after reload" >&2; exit 1; }
 
-if pgrep -x yabai >/dev/null; then
-  if [[ "$STOP_YABAI" -eq 1 ]]; then
-    yabai --stop-service
-    echo "install.sh: stopped yabai (yabai --stop-service)"
-  else
-    echo "install.sh: yabai is still running and will fight quilt over the same windows; run 'yabai --stop-service' or re-run with --stop-yabai" >&2
-  fi
-fi
-
 echo "install.sh: done. Space-switching uses the native macOS Option+1..9 shortcuts (unchanged)."
-echo "install.sh: to move the focused window to a space, run: quilt window --space N (no keyboard shortcut — currently blocked on this OS build without Dock injection; see README.md)."
+echo "install.sh: to move the focused window to a space, run: quilt window --space N (no keyboard shortcut; see Known limitations in README.md)."

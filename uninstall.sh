@@ -12,5 +12,4 @@ defaults delete org.hammerspoon.Hammerspoon MJConfigFile 2>/dev/null || true
 echo "==> 3/4 remove the quilt CLI and helper"
 rm -f "$HOME/.local/bin/quilt" "$HOME/.local/bin/quiltctl"
 
-echo "==> 4/4 done. Nothing else to revert: quilt never modified skhd or the native macOS hotkeys."
-echo "  - restart yabai if you stopped it: yabai --start-service"
+echo "==> 4/4 done. Nothing else to revert: quilt never modified any other keybindings."
