@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# quilt: the only interface skhd or a human touches. Keeps all `hs -c` quoting in one audited
+# place, and logs every invocation because skhd sends a spawned command's stdout/stderr to
+# /dev/null in service mode, making per-keypress failures otherwise invisible.
+set -euo pipefail
+
+CTL="${QUILT_CTL:-$HOME/.local/bin/quiltctl}"
+HS="${QUILT_HS:-/opt/homebrew/bin/hs}"
+LOG="$HOME/.local/state/quilt/quilt.log"
+mkdir -p "$(dirname "$LOG")"
+
+usage() {
+  echo "usage: quilt space --focus <1-10> | --list | --ensure <1-16> | --destroy <1-16>" >&2
+  echo "       quilt window --space <1-10>" >&2
+  echo "       quilt retile | state | frames | reload" >&2
+  exit 64
+}
+
+# Dispatch, capture, log and exit in one place so capture-vs-exec behaviour is pinned rather than
+# left to taste: every call site is the LAST thing quilt does, so exit "$rc" is always accurate.
+run() {
+  local out err rc tmp
+  tmp="$(mktemp)"
+  set +e
+  out="$("$@" 2>"$tmp")"
+  rc=$?
+  set -e
+  err="$(cat "$tmp")"
+  rm -f "$tmp"
+  [[ -n "$out" ]] && printf '%s\n' "$out"
+  [[ -n "$err" ]] && printf '%s\n' "$err" >&2
+  printf '%s | %s | rc=%s | %s | %s\n' "$(date -Iseconds)" "$*" "$rc" "$out" "$err" >> "$LOG"
+  exit "$rc"
+}
+
+# Same as run(), but for hs-backed verbs: `hs -c` always exits 0 when the IPC connection
+# succeeded, even when the Lua raised or the operation failed, so the real exit status must be
+# derived from the JSON it printed.
+run_hs() {
+  local out err rc tmp
+  tmp="$(mktemp)"
+  set +e
+  out="$("$@" 2>"$tmp")"
+  set -e
+  err="$(cat "$tmp")"
+  rm -f "$tmp"
+  rc=0
+  if echo "$out" | jq -e 'has("error") and .error != null' >/dev/null 2>&1; then
+    rc=1
+  elif echo "$out" | jq -e '.moved == false' >/dev/null 2>&1; then
+    rc=1
+  fi
+  [[ -n "$out" ]] && printf '%s\n' "$out"
+  [[ -n "$err" ]] && printf '%s\n' "$err" >&2
+  printf '%s | %s | rc=%s | %s | %s\n' "$(date -Iseconds)" "$*" "$rc" "$out" "$err" >> "$LOG"
+  exit "$rc"
+}
+
+[[ -x "$CTL" ]] || { echo '{"error":"quiltctl missing"}'; exit 3; }
+
+hs_precheck() {
+  if [[ ! -x "$HS" ]] || ! pgrep -x Hammerspoon >/dev/null 2>&1; then
+    echo '{"error":"hammerspoon ipc unavailable"}'
+    exit 3
+  fi
+}
+
+verb="${1:-}"
+
+case "$verb" in
+  space)
+    sub="${2:-}"
+    arg="${3:-}"
+    case "$sub" in
+      --focus)
+        [[ "$arg" =~ ^([1-9]|10)$ ]] || usage
+        run "$CTL" space-focus "$arg"
+        ;;
+      --list)
+        run "$CTL" spaces
+        ;;
+      --ensure)
+        [[ "$arg" =~ ^([1-9]|1[0-6])$ ]] || usage
+        run "$CTL" ensure "$arg"
+        ;;
+      --destroy)
+        [[ "$arg" =~ ^([1-9]|1[0-6])$ ]] || usage
+        run "$CTL" destroy "$arg"
+        ;;
+      *)
+        usage
+        ;;
+    esac
+    ;;
+  window)
+    sub="${2:-}"
+    arg="${3:-}"
+    [[ "$sub" == "--space" ]] || usage
+    [[ "$arg" =~ ^([1-9]|10)$ ]] || usage
+    hs_precheck
+    run_hs "$HS" -c "quilt.cli(\"move-window\", $arg)"
+    ;;
+  retile)
+    hs_precheck
+    run_hs "$HS" -c 'quilt.cli("retile")'
+    ;;
+  state)
+    hs_precheck
+    run_hs "$HS" -c 'quilt.cli("state")'
+    ;;
+  frames)
+    hs_precheck
+    run_hs "$HS" -c 'quilt.cli("frames")'
+    ;;
+  reload)
+    hs_precheck
+    run_hs "$HS" -c 'hs.reload()'
+    ;;
+  *)
+    usage
+    ;;
+esac
