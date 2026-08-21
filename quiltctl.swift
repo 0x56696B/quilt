@@ -320,7 +320,7 @@ func cmdSpaceFocus(_ targetIndex: Int) {
             moved = pollActiveSpaceChanged(from: lastActive, timeoutMs: 600)
             if !moved {
                 failExit(1, ["focused": false,
-                              "error": "gesture ignored — grant Accessibility to the app that runs quiltctl (your terminal for manual runs, skhd once installed)"])
+                              "error": "gesture ignored — grant Accessibility to the app that runs quiltctl (your terminal for manual runs, or the key-binding tool once installed)"])
             }
         }
 
@@ -386,7 +386,7 @@ func cmdMove(_ wid: UInt32, _ targetIndex: Int) {
         }
     }
 
-    // Tier 3: compat-ID fallback (the pre-14.5 mechanism yabai and Hammerspoon fall back to).
+    // Tier 3: compat-ID fallback (the pre-14.5 mechanism this space-management approach falls back to).
     let magic: Int32 = 0x79616265
     _ = SLSSpaceSetCompatID(cid, target.id, magic)
     var widVar = wid

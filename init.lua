@@ -1,5 +1,5 @@
 -- quilt: Hammerspoon entry point. Wires the tiler and exposes the quilt.cli API that the `quilt`
--- bash CLI drives over `hs -c`. No hs.hotkey call anywhere — skhd owns every keybinding.
+-- bash CLI drives over `hs -c`. No hs.hotkey call anywhere — quilt binds no keyboard shortcuts.
 local cfg = require("config")
 
 hs.window.animationDuration = 0

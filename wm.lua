@@ -89,10 +89,11 @@ local function retile()
   M.retiler:start()
 end
 
--- Drag-to-swap: yabai's own "drop zone" model, collapsed to its swap case since quilt has no
--- warp/insert-at-edge primitive yet (see README "Known limitations"). Watched via raw mouse
--- events rather than AX move notifications, which are unreliable on this Tahoe build (see
--- reconcile() below) — a leftMouseDown/leftMouseUp pair brackets every drag reliably regardless.
+-- Drag-to-swap: dropping a dragged window onto a tiled window swaps their positions in the BSP
+-- tree; quilt has no warp/insert-at-edge primitive yet (see README "Known limitations"). Watched
+-- via raw mouse events rather than AX move notifications, which are unreliable on this Tahoe
+-- build (see reconcile() below) — a leftMouseDown/leftMouseUp pair brackets every drag reliably
+-- regardless.
 --
 -- A gesture only counts as a move if the watched window's frame actually changed between down
 -- and up: this is what tells a real title-bar drag apart from a click, or an in-app drag (text
@@ -336,7 +337,7 @@ function M.start()
   apply(currentSpaceId())
 end
 
--- Called from quilt.cli, never from a hotkey — skhd owns keybindings.
+-- Called from quilt.cli, never bound to a hotkey directly — quilt binds no keyboard shortcuts.
 function M.moveFocusedToSpace(index)
   local w = hs.window.focusedWindow()
   if w == nil or not tileable(w) then

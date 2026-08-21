@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# quilt: the only interface skhd or a human touches. Keeps all `hs -c` quoting in one audited
-# place, and logs every invocation because skhd sends a spawned command's stdout/stderr to
-# /dev/null in service mode, making per-keypress failures otherwise invisible.
+# quilt: the single interface a human or a key-binding tool calls. Keeps all `hs -c` quoting in
+# one audited place, and logs every invocation so a failure run from a keybinding, with its
+# output otherwise discarded, is not invisible.
 set -euo pipefail
 
 CTL="${QUILT_CTL:-$HOME/.local/bin/quiltctl}"
